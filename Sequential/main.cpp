@@ -1,15 +1,12 @@
 #include<iostream>
 #include<limits>
-#include<cfloat>
 #include <array>
 #include <algorithm>
 #include <cmath>
 #include "settings.h"
-
 #include "HeapAndStructVector.h"
 #include <cassert>
 #include <vector>
-#include <fstream>
 #include <chrono>
 #include <functional>
 #include "numeric"
@@ -65,13 +62,11 @@ std::vector<short> get_neighbors(const short x, const short y, const short z)
 }
 
 double solve(double speed_array[settings::total_grid_size],bool const accepted_array[settings::total_grid_size], const short x, const short y, const short z){
-    //TODO maybe improve or  check compatability of old version
     double temp_res = std::numeric_limits<double>::infinity();
     double speed= speed_array[arr_index(x,y,z)];
     assert(!accepted_array[arr_index(x,y,z)]);
     //If the speed is zero(outside of original domain) we should instantly return infinity
     if(speed == 0){
-        //std::cout<<"ABSDHABD"<<std::endl;
         return temp_res;
     }
     double min_res_array[3];
@@ -186,23 +181,15 @@ void update_neighbors(MinHeap &h, double speed_array[settings::total_grid_size],
         short x_neigh = neighbors[i];
         short y_neigh = neighbors[i+1];
         short z_neigh = neighbors[i+2];
-        //bool check2 = accepted_array[arr_index(x_neigh, y_neigh, z_neigh)];
-       // double checkspeed = speed_array[x_neigh, y_neigh, z_neigh];
         if(!accepted_array[arr_index(x_neigh, y_neigh, z_neigh)]) {
-            //bool kek = accepted_array[arr_index(x_neigh, y_neigh, z_neigh)];
-            //int indexkek = h.get_heap_index(14, 16, 14);
             WeightedPoint currNode{x_neigh, y_neigh, z_neigh};
             double temp_weight = solve(std::ref(speed_array), accepted_array, x_neigh, y_neigh, z_neigh);
             if (h.get_heap_index(x_neigh, y_neigh, z_neigh) == -1) {
-                //std::cout<<"INSERTED A KEY\n";
                 currNode.weight = temp_weight;
                 h.insertKey(currNode);
             }
             else if (temp_weight < h.weight_at_index(h.get_heap_index(x_neigh, y_neigh, z_neigh))) {
-                //int index = h.get_heap_index(x_neigh, y_neigh, z_neigh);
                 h.decreaseKey(h.get_heap_index(x_neigh, y_neigh, z_neigh), temp_weight);
-                //index = h.get_heap_index(x_neigh, y_neigh, z_neigh);
-                //int c=0;
             }
 
         }
@@ -247,27 +234,11 @@ void fast_marching(MinHeap &h, bool  accepted_array[settings::total_grid_size], 
 {
     while(h.get_size()>0)
     {
-        //bool c= accepted_array[arr_index(14,16,14)];
-       // int index = h.get_heap_index(14, 16, 14);
-        //int index2 = h.get_heap_index(16,27,18);
-        //if(c){
-            //std::cout<<accepted_counter<<std::endl;
-        //}
-        //std::cout<<"GOT ONE\n";
         WeightedPoint a=h.extractMin();
-
-        //index = h.get_heap_index(14, 16, 14);
-        //assert(accepted_array[arr_index(a.m_x,a.m_y,a.m_z)]!=true);
-        //std::cout<<"DOESNT GET SENT";
         accepted_array[arr_index(a.m_x,a.m_y,a.m_z)]=true;
         speed_array[arr_index(a.m_x,a.m_y,a.m_z)] = a.weight;
-        //++accepted_counter;
         update_neighbors(h, std::ref(speed_array), std::ref(accepted_array), a.m_x,a.m_y,a.m_z);
     }
-    //for ( int i =0; i< settings::total_grid_size;++i)
-    //{
-        //std::cout<<speed_array[i]<<std::endl;
-    //}
 }
 
 bool in_barrier( const int x,const int y,const int z)
@@ -326,9 +297,11 @@ void id(const int function_number, const int mask_number)
             break;
         case 3 :    std::cout<< "(1- 0.99*std::sin(2*PI*h*x)*std::sin(2*PI*h*y)*std::sin(2*PI*h*z))" <<std::endl;
             break;
-        case 4 :    std::cout<< "0.001*(pow(std::sin(x*h),2)+pow(std::cos(y*h),2)+0.1)"<<std::endl;
+        case 4 :    std::cout<< "pow(std::sin(x*h),2)+pow(std::cos(y*h),2)+0.1"<<std::endl;
             break;
         case 5 :    std::cout<< "Spheric barriers, speed in barriers 0, else 1"<<std::endl;
+            break;
+        case 6 :    std::cout<< "0.001*(pow(std::sin(x*h),2)+pow(std::cos(y*h),2)+0.1)"<<std::endl;
             break;
         default :   std::cout<<"UNDEFINED FUNCTION!"<<std::endl;
             break;
@@ -347,8 +320,11 @@ void id(const int function_number, const int mask_number)
             break;
     }
 }
-double test(int mask_number, int function_number)
+int main()
 {
+    //set function and mask number here
+    int mask_number{1};
+    int function_number{1};
     //test with speed 1 and start in a ball in center of the mesh, should return distance from origin
     try {
         //initialize all arrays
@@ -372,9 +348,10 @@ double test(int mask_number, int function_number)
         auto startTime = std::chrono::system_clock::now();
         int accepted_counter{0};
 
+        //if you desire an output, comment out the corresponding sections. The python code will transform it into a .vts file
         //initialize output
         /*std::ofstream myfile;
-        myfile.open("test_barriers.txt");
+        myfile.open("output.txt");
         myfile << "Dimension information\n"<<settings::x_grid_size <<"\n"<<settings::y_grid_size<<"\n"<<settings::z_grid_size<<"\n";
         myfile << "Mask information\n";
         for ( int i =0; i< settings::total_grid_size;++i)
@@ -386,11 +363,7 @@ double test(int mask_number, int function_number)
         fast_marching(h,mask_array, std::ref(speed_array), accepted_counter);
         auto endTime = std::chrono::system_clock::now();
         std::chrono::duration<double> elapsed_seconds = endTime - startTime;
-
-        std::string dummy;
-        std::cout<<elapsed_seconds.count()<<std::endl<<std::endl;
-        std::cout << "Enter to continue..." << std::endl;
-        std::getline(std::cin, dummy);
+        std::cout<<"Runtime: "<<elapsed_seconds.count()<<std::endl;
 
         //print result to output
         /*myfile<<"Result information\n";
@@ -402,7 +375,7 @@ double test(int mask_number, int function_number)
         myfile.close();*/
         delete[] mask_array;
         delete[] speed_array;
-       return elapsed_seconds.count();
+        return 0;
 
     }
 
@@ -411,74 +384,6 @@ double test(int mask_number, int function_number)
     {
         std::cerr << "Error: " << exception << '\n';
     }
-    //return 0;
-    /* //test with speed 1 and start in (0,0,0), should return distance from origin
-     try {
-         std::cout<<sizeof(WeightedPoint)<<"\n";
-         //initialize all arrays
-         MinHeap h(settings::total_grid_size);
-         bool *mask_array{new bool[settings::total_grid_size]{}};
-         mask_array[0] = true;
-         double *speed_array{new double[settings::total_grid_size]{}};
-         for (int i = 0; i < settings::total_grid_size; ++i) {
-             speed_array[i] = 1;
-         }
-
-         double *weight_array{new double[settings::total_grid_size]{}};
-         for (int i = 0; i < settings::total_grid_size; ++i) {
-             weight_array[i] = std::numeric_limits<double>::infinity();
-         }
-         int accepted_counter{0};
-
-         //initialize output
-         std::ofstream myfile;
-         myfile.open("distance_cube_ver_8.txt");
-         myfile << "Dimension information\n"<<settings::x_grid_size <<"\n"<<settings::y_grid_size<<"\n"<<settings::z_grid_size<<"\n";
-         myfile << "Mask information\n";
-         for ( int i =0; i< settings::total_grid_size;++i)
-         {
-             myfile << mask_array[i]<<"\n";
-         }
-         initialize(h, mask_array, speed_array, weight_array, accepted_counter);
-         fast_marching(h, mask_array, speed_array, weight_array, accepted_counter);
-
-
-         std::cout<<"deviation: "<<weight_array[settings::total_grid_size-1]-sqrt(3)*((settings::x_grid_size-1)*settings::h);
-         //print result to output
-         myfile<<"Result information\n";
-         for ( int i =0; i< settings::total_grid_size;++i)
-         {
-             myfile << weight_array[i]<<"\n";
-         }
-         myfile.close();
-     }
-
-
-     catch (const char* exception)
-     {
-         std::cerr << "Error: " << exception << '\n';
-     }
-     return 0;
-     */
 }
-int main(){
-    int num_iter = 1;
-    //std::vector<int> test_cases {1,1, 2, 4, 3, 4, 1, 2, 4, 3,6,3};
-    std::vector<int> test_cases {5,4};
-    for (int i = 0; i < test_cases.size(); i += 2) {
-        int function_number{test_cases[i]};
-        int mask_number{test_cases[i + 1]};
-        std::cout<<"Now running: "<<std::endl;
-        id(function_number, mask_number);
-        std::cout<<"On a "<< settings::x_grid_size <<" x "<< settings::y_grid_size <<" x "<< settings::z_grid_size <<" Grid "<<std::endl;
-        std::vector<double> res_vector;
-        for (int j = 0; j < num_iter; ++j) {
-            res_vector.push_back(test(mask_number, function_number));
-        }
-        std::cout<<"Lowest runtime: "<<*std::min_element(res_vector.begin(),res_vector.end())<<std::endl;
-        std::cout<<"Highest runtime: "<<*std::max_element(res_vector.begin(),res_vector.end())<<std::endl;
-        std::cout<<"Average runtime of "<<num_iter<< " iterations: "<< std::accumulate(res_vector.begin(),res_vector.end(),0.0)/static_cast<double>(num_iter)<<std::endl<<std::endl;
 
-    }
-}
 

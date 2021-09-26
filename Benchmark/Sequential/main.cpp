@@ -1,15 +1,12 @@
 #include<iostream>
 #include<limits>
-#include<cfloat>
 #include <array>
 #include <algorithm>
 #include <cmath>
 #include "settings.h"
-
 #include "HeapAndStructVector.h"
 #include <cassert>
 #include <vector>
-#include <fstream>
 #include <chrono>
 #include <functional>
 #include "numeric"
@@ -65,13 +62,11 @@ std::vector<short> get_neighbors(const short x, const short y, const short z)
 }
 
 double solve(double speed_array[settings::total_grid_size],bool const accepted_array[settings::total_grid_size], const short x, const short y, const short z){
-    //TODO maybe improve or  check compatability of old version
     double temp_res = std::numeric_limits<double>::infinity();
     double speed= speed_array[arr_index(x,y,z)];
     assert(!accepted_array[arr_index(x,y,z)]);
     //If the speed is zero(outside of original domain) we should instantly return infinity
     if(speed == 0){
-        //std::cout<<"ABSDHABD"<<std::endl;
         return temp_res;
     }
     double min_res_array[3];
@@ -186,23 +181,15 @@ void update_neighbors(MinHeap &h, double speed_array[settings::total_grid_size],
         short x_neigh = neighbors[i];
         short y_neigh = neighbors[i+1];
         short z_neigh = neighbors[i+2];
-        //bool check2 = accepted_array[arr_index(x_neigh, y_neigh, z_neigh)];
-       // double checkspeed = speed_array[x_neigh, y_neigh, z_neigh];
         if(!accepted_array[arr_index(x_neigh, y_neigh, z_neigh)]) {
-            //bool kek = accepted_array[arr_index(x_neigh, y_neigh, z_neigh)];
-            //int indexkek = h.get_heap_index(14, 16, 14);
             WeightedPoint currNode{x_neigh, y_neigh, z_neigh};
             double temp_weight = solve(std::ref(speed_array), accepted_array, x_neigh, y_neigh, z_neigh);
             if (h.get_heap_index(x_neigh, y_neigh, z_neigh) == -1) {
-                //std::cout<<"INSERTED A KEY\n";
                 currNode.weight = temp_weight;
                 h.insertKey(currNode);
             }
             else if (temp_weight < h.weight_at_index(h.get_heap_index(x_neigh, y_neigh, z_neigh))) {
-                //int index = h.get_heap_index(x_neigh, y_neigh, z_neigh);
                 h.decreaseKey(h.get_heap_index(x_neigh, y_neigh, z_neigh), temp_weight);
-                //index = h.get_heap_index(x_neigh, y_neigh, z_neigh);
-                //int c=0;
             }
 
         }
@@ -247,27 +234,11 @@ void fast_marching(MinHeap &h, bool  accepted_array[settings::total_grid_size], 
 {
     while(h.get_size()>0)
     {
-        //bool c= accepted_array[arr_index(14,16,14)];
-       // int index = h.get_heap_index(14, 16, 14);
-        //int index2 = h.get_heap_index(16,27,18);
-        //if(c){
-            //std::cout<<accepted_counter<<std::endl;
-        //}
-        //std::cout<<"GOT ONE\n";
         WeightedPoint a=h.extractMin();
-
-        //index = h.get_heap_index(14, 16, 14);
-        //assert(accepted_array[arr_index(a.m_x,a.m_y,a.m_z)]!=true);
-        //std::cout<<"DOESNT GET SENT";
         accepted_array[arr_index(a.m_x,a.m_y,a.m_z)]=true;
         speed_array[arr_index(a.m_x,a.m_y,a.m_z)] = a.weight;
-        //++accepted_counter;
         update_neighbors(h, std::ref(speed_array), std::ref(accepted_array), a.m_x,a.m_y,a.m_z);
     }
-    //for ( int i =0; i< settings::total_grid_size;++i)
-    //{
-        //std::cout<<speed_array[i]<<std::endl;
-    //}
 }
 
 bool in_barrier( const int x,const int y,const int z)
@@ -326,9 +297,11 @@ void id(const int function_number, const int mask_number)
             break;
         case 3 :    std::cout<< "(1- 0.99*std::sin(2*PI*h*x)*std::sin(2*PI*h*y)*std::sin(2*PI*h*z))" <<std::endl;
             break;
-        case 4 :    std::cout<< "0.001*(pow(std::sin(x*h),2)+pow(std::cos(y*h),2)+0.1)"<<std::endl;
+        case 4 :    std::cout<< "pow(std::sin(x*h),2)+pow(std::cos(y*h),2)+0.1"<<std::endl;
             break;
         case 5 :    std::cout<< "Spheric barriers, speed in barriers 0, else 1"<<std::endl;
+            break;
+        case 6 :    std::cout<< "0.001*(pow(std::sin(x*h),2)+pow(std::cos(y*h),2)+0.1)"<<std::endl;
             break;
         default :   std::cout<<"UNDEFINED FUNCTION!"<<std::endl;
             break;
@@ -463,8 +436,7 @@ double test(int mask_number, int function_number)
 }
 int main(){
     int num_iter = 1;
-    //std::vector<int> test_cases {1,1, 2, 4, 3, 4, 1, 2, 4, 3,6,3};
-    std::vector<int> test_cases {5,4};
+    std::vector<int> test_cases {1,1, 2, 4, 3, 4, 1, 2, 5,4, 4, 3,6,3};
     for (int i = 0; i < test_cases.size(); i += 2) {
         int function_number{test_cases[i]};
         int mask_number{test_cases[i + 1]};
